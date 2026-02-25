@@ -1,6 +1,6 @@
 # Agents
 
-See SPEC.md for design intent and config file format.
+See README.md for design intent and config file format.
 
 ## Build
 
