@@ -18,20 +18,16 @@ entirely by editing a text file with any file manager or text editor app.
 
 ## Behaviour
 
-- **The app must be launched at least once** to schedule the background job.
+- **The app must be launched at least once** to schedule reminders.
   Until then, no notifications will fire.
 - On first launch, the app requests notification permission (Android 13+),
-  schedules a background job, then closes. There is no visible UI.
-- On subsequent launches the app closes immediately (the background job is
-  already running).
-- A background job runs approximately every 15 minutes. Each run:
-  1. Reads the config file.
-  2. For each reminder line, checks whether it is due.
-  3. Fires a notification for any reminder that is due and has not already
-     fired today.
-- Reminders fire at most once per day per line.
-- Notifications may arrive up to 15 minutes after the scheduled time.
-- The background job persists across reboots without any user action.
+  schedules an exact alarm for each reminder in the config file, then closes.
+  There is no visible UI.
+- **Re-launch the app after editing the config file** to reschedule alarms.
+  Changes do not take effect until the app is opened again.
+- Each alarm fires at exactly the scheduled time, then automatically reschedules
+  itself for the next occurrence of that reminder.
+- Alarms are rescheduled automatically after a reboot — no user action required.
 
 ---
 
@@ -101,9 +97,11 @@ Lines starting with `#` and blank lines are ignored.
 
 ## Permissions
 
-| Permission           | When requested        | Purpose                          |
-|----------------------|-----------------------|----------------------------------|
-| `POST_NOTIFICATIONS` | On first launch (Android 13+) | Required to show notifications |
+| Permission              | When requested              | Purpose                                        |
+|-------------------------|-----------------------------|------------------------------------------------|
+| `POST_NOTIFICATIONS`    | On first launch (Android 13+) | Required to show notifications               |
+| `USE_EXACT_ALARM`       | Granted automatically (Android 13+) | Required to fire alarms at exact times |
+| `RECEIVE_BOOT_COMPLETED`| Granted automatically       | Reschedule alarms after reboot                 |
 
 No network, location, or other permissions are used.
 
@@ -111,18 +109,16 @@ No network, location, or other permissions are used.
 
 ## Testing
 
-WorkManager's 15-minute polling interval makes manual testing slow. Use these
-adb commands to trigger the worker immediately after installing:
+Use adb to push a test config file and trigger an alarm shortly in the future:
 
-Force-run the WorkManager job:
 ```bash
-adb shell cmd jobscheduler run -f com.vrsa.app 0
+# Write a reminder 2 minutes from now (adjust time as needed)
+echo "HH:MM  daily  Test reminder" > /tmp/reminders.txt
+adb push /tmp/reminders.txt /sdcard/Android/data/com.vrsa.app/files/reminders.txt
 ```
 
-Check WorkManager diagnostics:
-```bash
-adb shell am broadcast -a androidx.work.diagnostics.REQUEST_DIAGNOSTICS_INFO -p com.vrsa.app
-```
+Then re-launch the app to schedule the alarm. The notification will appear at
+the specified time.
 
 `adb` is not on the system PATH — see AGENTS.md for the full path.
 
@@ -131,16 +127,15 @@ adb shell am broadcast -a androidx.work.diagnostics.REQUEST_DIAGNOSTICS_INFO -p 
 ## Limitations
 
 - Reminders are recurring only. There is no one-time / dated reminder support.
-- Notifications may arrive up to ~15 minutes late due to the polling interval.
-- If the config file does not exist, the app creates it with format examples as comments.
 - Malformed lines (wrong time format, unknown day names, missing label) are
   silently skipped.
 - If the user denies notification permission, no notifications will be shown.
   Re-launch the app to be prompted again, or grant the permission manually in
   system settings.
-- The app does not watch the file for changes. Edits take effect at the next
-  poll cycle (within 15 minutes).
+- **The app does not watch the config file for changes.** After editing
+  `reminders.txt`, re-launch the app to reschedule alarms. Removed reminders
+  will fire one final time at their next scheduled occurrence before stopping.
 - On some devices (particularly Samsung, Xiaomi, and other OEM Android skins),
-  aggressive battery management can silently prevent background jobs from running.
-  If notifications stop arriving, go to Settings → Battery → Reminders and set
-  it to "Unrestricted" or "Don't optimise". The exact path varies by device.
+  aggressive battery management can interfere with exact alarms. If notifications
+  stop arriving, go to Settings → Battery → Reminders and set it to
+  "Unrestricted" or "Don't optimise". The exact path varies by device.
