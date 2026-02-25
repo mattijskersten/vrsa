@@ -28,8 +28,9 @@ class ReminderWorker(context: Context, params: WorkerParameters) : Worker(contex
             .forEach { line ->
                 val reminder = parseLine(line) ?: return@forEach
                 if (isDue(reminder, today, now) && !firedToday(prefs, line, today)) {
-                    postNotification(reminder.label, line.hashCode())
-                    markFired(prefs, line, today)
+                    if (postNotification(reminder.label, line.hashCode())) {
+                        markFired(prefs, line, today)
+                    }
                 }
             }
 
@@ -66,10 +67,10 @@ class ReminderWorker(context: Context, params: WorkerParameters) : Worker(contex
     private fun markFired(prefs: android.content.SharedPreferences, line: String, today: LocalDate) =
         prefs.edit().putString(line.hashCode().toString(), today.toString()).apply()
 
-    private fun postNotification(label: String, id: Int) {
+    private fun postNotification(label: String, id: Int): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             applicationContext.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) return
+        ) return false
 
         val notification = NotificationCompat.Builder(applicationContext, "reminders")
             .setSmallIcon(R.drawable.ic_notification)
@@ -80,5 +81,6 @@ class ReminderWorker(context: Context, params: WorkerParameters) : Worker(contex
             .build()
 
         NotificationManagerCompat.from(applicationContext).notify(id, notification)
+        return true
     }
 }
