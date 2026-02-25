@@ -2,7 +2,7 @@
   <img src="logo.svg" alt="vrsa" width="800"/>
 </div>
 
-# Very Reminder; Simple App (VRSA) — Specification
+# Very Reminder; Simple App (VRSA)
 
 *Wordplay on "Very Simple Reminder App", in the style of a doge meme. Pronounced vur-sah.*
 
