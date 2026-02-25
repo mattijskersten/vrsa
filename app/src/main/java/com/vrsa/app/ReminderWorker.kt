@@ -17,19 +17,7 @@ class ReminderWorker(context: Context, params: WorkerParameters) : Worker(contex
 
     override fun doWork(): Result {
         val file = File(applicationContext.getExternalFilesDir(null), "reminders.txt")
-        if (!file.exists()) {
-            file.writeText(
-                "# Reminders config file\n" +
-                "# One reminder per line: HH:MM  <days>  <label>\n" +
-                "# Days: daily  OR  Mon,Tue,Wed,Thu,Fri,Sat,Sun (comma-separated)\n" +
-                "#\n" +
-                "# Examples:\n" +
-                "# 08:00  daily                Morning alarm\n" +
-                "# 09:00  Mon,Tue,Wed,Thu,Fri  Weekday reminder\n" +
-                "# 22:30  Fri,Sat              Weekend late reminder\n"
-            )
-            return Result.success()
-        }
+        if (!file.exists()) return Result.success()
 
         val prefs = applicationContext.getSharedPreferences("fired", Context.MODE_PRIVATE)
         val today = LocalDate.now()

@@ -11,6 +11,7 @@ import androidx.core.app.ActivityCompat
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 class MainActivity : Activity() {
@@ -35,12 +36,29 @@ class MainActivity : Activity() {
     }
 
     private fun scheduleWork() {
+        createConfigFile()
         val request = PeriodicWorkRequestBuilder<ReminderWorker>(15, TimeUnit.MINUTES).build()
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             "reminders",
             ExistingPeriodicWorkPolicy.KEEP,
             request
         )
+    }
+
+    private fun createConfigFile() {
+        val file = File(getExternalFilesDir(null), "reminders.txt")
+        if (!file.exists()) {
+            file.writeText(
+                "# Reminders config file\n" +
+                "# One reminder per line: HH:MM  <days>  <label>\n" +
+                "# Days: daily  OR  Mon,Tue,Wed,Thu,Fri,Sat,Sun (comma-separated)\n" +
+                "#\n" +
+                "# Examples:\n" +
+                "# 08:00  daily                Morning alarm\n" +
+                "# 09:00  Mon,Tue,Wed,Thu,Fri  Weekday reminder\n" +
+                "# 22:30  Fri,Sat              Weekend late reminder\n"
+            )
+        }
     }
 
     private fun createNotificationChannel() {
