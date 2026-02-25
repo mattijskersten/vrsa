@@ -1,5 +1,9 @@
 # Very Reminder; Simple App (VRSA) — Specification
 
+*Wordplay on "Very Simple Reminder App", in the style of a doge meme. Pronounced vur-sah.*
+
+---
+
 ## Overview
 
 A headless Android app that reads a plain-text config file and fires
