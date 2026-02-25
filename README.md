@@ -10,9 +10,10 @@
 
 ## Overview
 
-A headless Android app that reads a plain-text config file and fires
-notifications at scheduled times. There is no UI. Configuration is done
-entirely by editing a text file with any file manager or text editor app.
+An Android app that fires notifications at scheduled times. Configuration is
+a plain-text file edited directly within the app (or with any external file
+manager or text editor). There is no home screen, settings screen, or widget —
+just an editor and a Save button.
 
 ---
 
@@ -20,11 +21,11 @@ entirely by editing a text file with any file manager or text editor app.
 
 - **The app must be launched at least once** to schedule reminders.
   Until then, no notifications will fire.
-- On first launch, the app requests notification permission (Android 13+),
-  schedules an exact alarm for each reminder in the config file, then closes.
-  There is no visible UI.
-- **Re-launch the app after editing the config file** to reschedule alarms.
-  Changes do not take effect until the app is opened again.
+- On first launch, the app requests notification permission (Android 13+) then
+  opens the config file editor.
+- The editor shows the raw contents of `reminders.txt`. Edit the file and tap
+  **Save** — the app writes the file and reschedules all alarms immediately.
+  A toast confirms how many reminders were scheduled.
 - Each alarm fires at exactly the scheduled time, then automatically reschedules
   itself for the next occurrence of that reminder.
 - Alarms are rescheduled automatically after a reboot — no user action required.
@@ -44,8 +45,11 @@ storage (`/storage/emulated/0/`). This is part of the phone's internal flash
 storage and is present on all normal Android devices — no SD card is required.
 
 This directory is created automatically on first app launch. If the config file
-does not exist, the app creates it with commented-out format examples. Edit it
-with any Android file manager or text editor that supports the path above.
+does not exist, the app creates it with commented-out format examples.
+
+The easiest way to edit it is within the app itself. It can also be edited
+externally with any file manager or text editor that supports the path above —
+re-open the app and tap Save to apply external changes.
 
 **Format**
 
@@ -109,7 +113,10 @@ No network, location, or other permissions are used.
 
 ## Testing
 
-Use adb to push a test config file and trigger an alarm shortly in the future:
+Add a reminder a couple of minutes in the future using the in-app editor, then
+tap Save. The notification will appear at the specified time.
+
+Alternatively, push a config file directly via adb:
 
 ```bash
 # Write a reminder 2 minutes from now (adjust time as needed)
@@ -117,8 +124,7 @@ echo "HH:MM  daily  Test reminder" > /tmp/reminders.txt
 adb push /tmp/reminders.txt /sdcard/Android/data/com.vrsa.app/files/reminders.txt
 ```
 
-Then re-launch the app to schedule the alarm. The notification will appear at
-the specified time.
+Then open the app and tap Save to schedule the alarm.
 
 `adb` is not on the system PATH — see AGENTS.md for the full path.
 
@@ -132,9 +138,10 @@ the specified time.
 - If the user denies notification permission, no notifications will be shown.
   Re-launch the app to be prompted again, or grant the permission manually in
   system settings.
-- **The app does not watch the config file for changes.** After editing
-  `reminders.txt`, re-launch the app to reschedule alarms. Removed reminders
-  will fire one final time at their next scheduled occurrence before stopping.
+- **Changes only take effect after tapping Save.** Editing `reminders.txt`
+  externally has no effect until the app is opened and Save is tapped. Removed
+  reminders will fire one final time at their next scheduled occurrence before
+  stopping.
 - On some devices (particularly Samsung, Xiaomi, and other OEM Android skins),
   aggressive battery management can interfere with exact alarms. If notifications
   stop arriving, go to Settings → Battery → Reminders and set it to
