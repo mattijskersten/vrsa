@@ -8,11 +8,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.core.app.ActivityCompat
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
 import java.io.File
-import java.util.concurrent.TimeUnit
 
 class MainActivity : Activity() {
 
@@ -24,25 +20,26 @@ class MainActivity : Activity() {
         ) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 0)
         } else {
-            scheduleWork()
+            scheduleAlarms()
             finish()
         }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        scheduleWork()
+        scheduleAlarms()
         finish()
     }
 
-    private fun scheduleWork() {
+    private fun scheduleAlarms() {
         createConfigFile()
-        val request = PeriodicWorkRequestBuilder<ReminderWorker>(15, TimeUnit.MINUTES).build()
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "reminders",
-            ExistingPeriodicWorkPolicy.KEEP,
-            request
-        )
+        val file = File(getExternalFilesDir(null), "reminders.txt")
+        file.readLines()
+            .filter { it.isNotBlank() && !it.startsWith("#") }
+            .forEach { line ->
+                val reminder = parseLine(line) ?: return@forEach
+                scheduleAlarm(this, reminder, line.hashCode())
+            }
     }
 
     private fun createConfigFile() {
