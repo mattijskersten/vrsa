@@ -10,7 +10,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.vrsa.app2"
+        applicationId = "com.vrsa.app"
         minSdk = 26
         targetSdk = 35
         versionCode = 2

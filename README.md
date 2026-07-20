@@ -1,4 +1,4 @@
-# VRSA 2 — Very Reminder; Simple App
+# VRSA — Very Reminder; Simple App
 
 A small, reliable Android app for recurring weekly reminders, configured
 through a plain-text file edited directly in the app. This is the
@@ -24,7 +24,7 @@ the scheduling correctness issues fixed.
 ## Config file
 
 ```
-/sdcard/Android/data/com.vrsa.app2/files/reminders.txt
+/sdcard/Android/data/com.vrsa.app/files/reminders.txt
 ```
 
 One reminder per line; blank lines and `#` comments are ignored:
@@ -65,7 +65,7 @@ JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew testDebugUnitTest
 ```
 
 Toolchain: Gradle 8.11.1, AGP 8.7.3, Kotlin 2.0.21, compile/target SDK 35,
-min SDK 26. Application id is `com.vrsa.app2` so it installs alongside v1.
+min SDK 26.
 
 Install:
 
@@ -73,10 +73,10 @@ Install:
 ~/Android/Sdk/platform-tools/adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-## Porting from v1
+## Upgrading from v1
 
-`tools/port-from-v1.sh` copies the old app's `reminders.txt` into VRSA 2 and
-relaunches it (auto-apply does the rest). One-time, idempotent.
+Install over the old app (same application id). The existing `reminders.txt`
+is preserved by the update and applied automatically on first launch.
 
 ## Testing
 

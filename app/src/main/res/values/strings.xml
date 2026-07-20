@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">VRSA 2</string>
+    <string name="app_name">VRSA</string>
 
     <string name="notification_channel_name">Reminders</string>
     <string name="notification_channel_description">Scheduled reminder notifications</string>
