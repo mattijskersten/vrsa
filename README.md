@@ -1,148 +1,94 @@
-<div align="center">
-  <img src="logo.svg" alt="vrsa" width="800"/>
-</div>
+# VRSA 2 — Very Reminder; Simple App
 
-# Very Reminder; Simple App (VRSA)
-
-*Wordplay on "Very Simple Reminder App", in the style of a doge meme. Pronounced vur-sah.*
-
----
-
-## Overview
-
-An Android app that fires notifications at scheduled times. Configuration is
-a plain-text file edited directly within the app (or with any external file
-manager or text editor). There is no home screen, settings screen, or widget —
-just an editor and a Save button.
-
----
+A small, reliable Android app for recurring weekly reminders, configured
+through a plain-text file edited directly in the app. This is the
+professional rewrite of the original prototype: same minimalist product —
+an editor and a Save button, nothing else — rebuilt on a modern stack with
+the scheduling correctness issues fixed.
 
 ## Behaviour
 
-- **The app must be launched at least once** to schedule reminders.
-  Until then, no notifications will fire.
-- On first launch, the app requests notification permission (Android 13+) then
-  opens the config file editor.
-- The editor shows the raw contents of `reminders.txt`. Edit the file and tap
-  **Save** — the app writes the file and reschedules all alarms immediately.
-  A toast confirms how many reminders were scheduled.
-- Each alarm fires at exactly the scheduled time, then automatically reschedules
-  itself for the next occurrence of that reminder.
-- Alarms are rescheduled automatically after a reboot — no user action required.
+- The app shows the raw contents of `reminders.txt` in a monospace editor.
+  Edit and tap **Save** — the file is written and all alarms are rebuilt.
+  A snackbar confirms how many reminders were scheduled.
+- Lines that can't be parsed are listed in-app with their line number and
+  reason (v1 silently dropped them).
+- The file can also be edited externally (file manager, adb); changes are
+  **applied automatically the next time the app opens** — no Save needed
+  (v1 required a manual re-save, and removed reminders fired one last time).
+- Notifications fire at exactly the scheduled time and reschedule themselves.
+  Alarms survive reboots, app updates, timezone changes, and clock changes.
+- In-app warnings (with one-tap fixes) when notification permission or the
+  exact-alarm capability is missing.
 
----
-
-## Config File
-
-**Location**
+## Config file
 
 ```
-/sdcard/Android/data/com.vrsa.app/files/reminders.txt
+/sdcard/Android/data/com.vrsa.app2/files/reminders.txt
 ```
 
-`/sdcard/` is Android's standard symlink to the device's built-in user-accessible
-storage (`/storage/emulated/0/`). This is part of the phone's internal flash
-storage and is present on all normal Android devices — no SD card is required.
-
-This directory is created automatically on first app launch. If the config file
-does not exist, the app creates it with commented-out format examples.
-
-The easiest way to edit it is within the app itself. It can also be edited
-externally with any file manager or text editor that supports the path above —
-re-open the app and tap Save to apply external changes.
-
-**Format**
-
-One reminder per line:
+One reminder per line; blank lines and `#` comments are ignored:
 
 ```
 HH:MM  <days>  <label>
 ```
 
-| Field   | Description                                                         |
-|---------|---------------------------------------------------------------------|
-| `HH:MM` | 24-hour time in `HH:MM` format (e.g. `08:00`, `22:30`)            |
-| `days`  | `daily`, or a comma-separated list of day abbreviations (see below) |
-| `label` | Free text shown in the notification body                            |
+- `HH:MM` — 24-hour time (`8:00` and `08:00` both accepted)
+- `days` — `daily`, or a comma-separated list of `Mon` `Tue` `Wed` `Thu`
+  `Fri` `Sat` `Sun` (case-insensitive)
+- `label` — free text shown in the notification
 
-Fields are separated by one or more spaces or tabs.
+## Architecture
 
-**Day abbreviations**
+Single-module MVVM app, manual dependency injection (`AppContainer` in
+`VrsaApplication` — Hilt would be overhead at this size).
 
-`Mon` `Tue` `Wed` `Thu` `Fri` `Sat` `Sun` (case-insensitive)
+| Layer | Contents |
+|---|---|
+| `domain/` | `parseConfig()` (text → reminders + per-line errors) and `nextOccurrence()` (pure, zone-aware scheduling math incl. DST gaps). Both Android-free and unit-tested. |
+| `data/` | Room entity/DAO/database — the *runtime mirror* of the text file — and `ConfigRepository`, the single write path: apply text → write file, rebuild DB rows, cancel stale alarms, schedule the new set. |
+| `scheduling/` | `ReminderScheduler` (one alarm per reminder, keyed by DB id), `ReminderAlarmReceiver` (fires, re-reads state from DB, reschedules), `SystemEventReceiver` (boot / update / time / timezone → reschedule all). |
+| `notifications/` | Channel setup and notification building. |
+| `ui/` | Compose editor screen + `EditorViewModel`. |
 
-**Comments and blank lines**
+Why a database behind a text file: alarm intents carry only a stable row id,
+so the receiver can check current state at fire time. Every Save cancels the
+previous alarm set before scheduling the new one — the two v1 bugs
+(`line.hashCode()` identity collisions, removed reminders firing once more)
+are structurally impossible.
 
-Lines starting with `#` and blank lines are ignored.
+## Build
 
-**Example**
-
+```bash
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew assembleDebug
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew testDebugUnitTest
 ```
-# Weekday reminders
-08:00  Mon,Tue,Wed,Thu,Fri  Take medication
-12:30  daily                Drink water
-22:30  Mon,Wed,Fri          Evening reminder
 
-# Weekend
-09:00  Sat,Sun              Morning walk
+Toolchain: Gradle 8.11.1, AGP 8.7.3, Kotlin 2.0.21, compile/target SDK 35,
+min SDK 26. Application id is `com.vrsa.app2` so it installs alongside v1.
+
+Install:
+
+```bash
+~/Android/Sdk/platform-tools/adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
----
+## Porting from v1
 
-## Notifications
-
-- Delivered as a standard Android notification (not a full-screen alarm).
-- Title: `Reminder`
-- Body: the label text from the config file.
-- Priority: high (causes a heads-up notification on most devices).
-- Auto-dismissed when tapped.
-
----
-
-## Permissions
-
-| Permission              | When requested              | Purpose                                        |
-|-------------------------|-----------------------------|------------------------------------------------|
-| `POST_NOTIFICATIONS`    | On first launch (Android 13+) | Required to show notifications               |
-| `USE_EXACT_ALARM`       | Granted automatically (Android 13+) | Required to fire alarms at exact times |
-| `RECEIVE_BOOT_COMPLETED`| Granted automatically       | Reschedule alarms after reboot                 |
-
-No network, location, or other permissions are used.
-
----
+`tools/port-from-v1.sh` copies the old app's `reminders.txt` into VRSA 2 and
+relaunches it (auto-apply does the rest). One-time, idempotent.
 
 ## Testing
 
-Add a reminder a couple of minutes in the future using the in-app editor, then
-tap Save. The notification will appear at the specified time.
+Unit tests cover the config parser (`ConfigParserTest`), the scheduling math
+(`NextOccurrenceTest`, incl. the strictly-after boundary and a DST
+spring-forward gap), and day-bitmask persistence (`DaysMaskTest`).
 
-Alternatively, push a config file directly via adb:
+Manual smoke test: add a reminder a couple of minutes ahead, Save, wait for
+the heads-up notification; or push a file via adb and just reopen the app.
 
-```bash
-# Write a reminder 2 minutes from now (adjust time as needed)
-echo "HH:MM  daily  Test reminder" > /tmp/reminders.txt
-adb push /tmp/reminders.txt /sdcard/Android/data/com.vrsa.app/files/reminders.txt
-```
+## Known limitations
 
-Then open the app and tap Save to schedule the alarm.
-
-`adb` is not on the system PATH — see AGENTS.md for the full path.
-
----
-
-## Limitations
-
-- Reminders are recurring only. There is no one-time / dated reminder support.
-- Malformed lines (wrong time format, unknown day names, missing label) are
-  silently skipped.
-- If the user denies notification permission, no notifications will be shown.
-  Re-launch the app to be prompted again, or grant the permission manually in
-  system settings.
-- **Changes only take effect after tapping Save.** Editing `reminders.txt`
-  externally has no effect until the app is opened and Save is tapped. Removed
-  reminders will fire one final time at their next scheduled occurrence before
-  stopping.
-- On some devices (particularly Samsung, Xiaomi, and other OEM Android skins),
-  aggressive battery management can interfere with exact alarms. If notifications
-  stop arriving, go to Settings → Battery → Reminders and set it to
-  "Unrestricted" or "Don't optimise". The exact path varies by device.
+- Weekly recurring reminders only — no one-off dated reminders, no snooze.
+- OEM battery managers (Samsung/Xiaomi etc.) can still suppress alarms; set
+  the app to "Unrestricted" battery usage if notifications stop.

@@ -1,3 +1,25 @@
 <resources>
-    <string name="app_name">vrsa</string>
+    <string name="app_name">VRSA 2</string>
+
+    <string name="notification_channel_name">Reminders</string>
+    <string name="notification_channel_description">Scheduled reminder notifications</string>
+    <string name="notification_title">Reminder</string>
+
+    <string name="action_save">Save</string>
+    <string name="action_grant">Grant</string>
+    <string name="action_allow">Allow</string>
+
+    <plurals name="saved_reminders">
+        <item quantity="one">Saved · %d reminder scheduled</item>
+        <item quantity="other">Saved · %d reminders scheduled</item>
+    </plurals>
+
+    <plurals name="parse_errors_title">
+        <item quantity="one">%d line was not understood</item>
+        <item quantity="other">%d lines were not understood</item>
+    </plurals>
+    <string name="parse_error_line">Line %1$d: %2$s</string>
+
+    <string name="warning_no_notification_permission">Notifications are disabled, so reminders can\'t be shown. Grant the notification permission to receive them.</string>
+    <string name="warning_no_exact_alarms">Exact alarms are disabled, so reminders may arrive late. Allow exact alarms for on-time delivery.</string>
 </resources>

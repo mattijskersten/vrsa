@@ -1,26 +1,33 @@
 # Agents
 
-See README.md for design intent and config file format.
+See README.md for architecture and design decisions.
 
 ## Build
 
-```bash
-JAVA_HOME=/opt/android-studio/jbr ./gradlew assembleDebug
-```
-
-Java is not on the system PATH — it must be referenced from the Android Studio
-installation as above, otherwise the build fails immediately.
-
-## Install & adb
-
-`adb` is also not on the system PATH. It is bundled with Android Studio at:
+Java is not on the default toolchain path Gradle expects — set `JAVA_HOME`
+explicitly:
 
 ```bash
-/home/matt/Android/Sdk/platform-tools/adb
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew assembleDebug
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew testDebugUnitTest
 ```
 
-Install the debug APK:
+The Android SDK lives at `/home/matt/Android/Sdk` (see `local.properties`).
+
+## adb
+
+`adb` is not on PATH:
 
 ```bash
 /home/matt/Android/Sdk/platform-tools/adb install app/build/outputs/apk/debug/app-debug.apk
 ```
+
+## Conventions
+
+- All user-visible text goes in `res/values/strings.xml`.
+- The text file is the user-facing source of truth; the Room DB is its
+  runtime mirror. All mutations go through `ConfigRepository.apply()` so
+  file, database, and AlarmManager can never drift — never call the DAO
+  directly from UI code.
+- `domain/` (`ConfigParser.kt`, `NextOccurrence.kt`) must stay free of
+  Android imports (it's the unit-tested core).
