@@ -1,4 +1,10 @@
+<div align="center">
+  <img src="logo.svg" alt="vrsa" width="800"/>
+</div>
+
 # VRSA — Very Reminder; Simple App
+
+*Wordplay on "Very Simple Reminder App", in the style of a doge meme. Pronounced vur-sah.*
 
 A small, reliable Android app for recurring weekly reminders, configured
 through a plain-text file edited directly in the app. This is the
